@@ -5,6 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
+#include <Esp.h>
 
 // This fixes the conflict with Arduino.h
 #undef B1
@@ -80,23 +81,47 @@ void startWebServer() {
     next();
   });
 
-  /*server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-    auto s = fmt::format("Hello from ESP32! Uptime: {}", millis());
-    request->send(200, "text/plain", s.c_str());
-  });
-
-  server.on("/json", HTTP_GET, [](AsyncWebServerRequest* request) {
-    auto uptime = millis();
-
+  server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest* request) {
     JsonDocument doc;
-    doc["message"] = fmt::format("Hello from ESP32! Uptime: {}", uptime);
-    doc["uptime"] = uptime;
+    doc["chipModel"] = ESP.getChipModel();
+    doc["chipRevision"] = ESP.getChipRevision();
+    doc["cores"] = ESP.getChipCores();
+    doc["cpuFrequency"] = ESP.getCpuFreqMHz();
+    doc["totalHeap"] = ESP.getHeapSize();
+    doc["freeHeap"] = ESP.getFreeHeap();
+    doc["spiffsTotalBytes"] = SPIFFS.totalBytes();
+    doc["spiffsUsedBytes"] = SPIFFS.usedBytes();    
+    doc["sdkVersion"] = ESP.getSdkVersion();    
+    doc["uptime"] = millis();    
 
     std::string jsonString;
-    serializeJsonPretty(doc, jsonString);
+    serializeJson(doc, jsonString);
 
-    request->send(200, "text/plain", jsonString.c_str());
-  });*/
+    request->send(200, "application/json", jsonString.c_str());
+  });
+
+  server.on("/api/sum", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, 
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    
+      DynamicJsonDocument requestBodyDoc(1024);
+      DeserializationError error = deserializeJson(requestBodyDoc, data, len);
+      if (error) {        
+        request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+        return;
+      }
+
+      const int a = requestBodyDoc["a"];
+      const int b = requestBodyDoc["b"];
+      const int result = a + b;
+
+      JsonDocument responseBodyDoc;
+      responseBodyDoc["result"] = result;    
+
+      std::string responseBodyJsonString;
+      serializeJson(responseBodyDoc, responseBodyJsonString);
+
+      request->send(200, "application/json", responseBodyJsonString.c_str());
+    });
 
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
 
