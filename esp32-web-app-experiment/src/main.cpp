@@ -103,7 +103,7 @@ void startWebServer() {
   server.on("/api/sum", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, 
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     
-      DynamicJsonDocument requestBodyDoc(1024);
+      JsonDocument requestBodyDoc;
       DeserializationError error = deserializeJson(requestBodyDoc, data, len);
       if (error) {        
         request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
@@ -124,6 +124,14 @@ void startWebServer() {
     });
 
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
+
+  server.onNotFound([](AsyncWebServerRequest *request) {
+    if (request->method() == HTTP_GET && !request->url().startsWith("/api")) {
+      request->send(SPIFFS, "/index.html", "text/html");
+    } else {
+      request->send(404, "text/plain", "Not found");
+    }
+  });
 
   server.begin();
 }
