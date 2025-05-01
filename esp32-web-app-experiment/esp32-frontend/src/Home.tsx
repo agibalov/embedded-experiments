@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getSystemInfo, SystemInfo } from "./api";
-import { Typography } from "@mui/material";
+import Typography from "@mui/material/Typography";
 
 export default function Home() {
     const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);

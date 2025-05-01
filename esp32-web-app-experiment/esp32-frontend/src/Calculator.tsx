@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { addNumbers } from './api';
-import { Box, Button, TextField, Typography } from '@mui/material';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
 
 export default function Calculator() {
     const [numberA, setNumberA] = useState<number>(2);
