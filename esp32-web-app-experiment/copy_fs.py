@@ -1,7 +1,7 @@
 import shutil
 import os
 
-src = os.path.join("esp32-app", "dist")
+src = os.path.join("esp32-frontend", "dist")
 dst = "data"
 
 if os.path.exists(dst):
