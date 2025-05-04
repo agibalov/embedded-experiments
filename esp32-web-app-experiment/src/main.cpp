@@ -6,6 +6,7 @@
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
 #include <Esp.h>
+#include <ESPmDNS.h>
 
 // This fixes the conflict with Arduino.h
 #undef B1
@@ -13,6 +14,7 @@
 
 bool connectToWifi();
 void sendHttpRequest();
+void startMdns();
 void startWebServer();
 void showFileSystemInfo();
 
@@ -31,6 +33,8 @@ void setup() {
     Serial.printf("No wifi connection - not continuing\n");
     return;
   } 
+
+  startMdns();
 
   startWebServer();
 }
@@ -67,6 +71,18 @@ bool connectToWifi() {
   Serial.printf("Gateway: %s\n", WiFi.gatewayIP().toString().c_str());
   
   return true;
+}
+
+void startMdns() {
+  char* mdnsHostName = "helloesp32";
+  if (MDNS.begin(mdnsHostName)) {
+    MDNS.addService("http", "tcp", 80);
+    MDNS.addServiceTxt("http", "tcp", "message", "hello world");
+
+    Serial.printf("Web server should be available at: %s.local\n", mdnsHostName);
+  } else {
+    Serial.printf("Failed to start MDNS\n");
+  }
 }
 
 AsyncWebServer server(80);
