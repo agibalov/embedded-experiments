@@ -18,6 +18,9 @@ void startMdns();
 void startWebServer();
 void showFileSystemInfo();
 
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
+
 void setup() {
   Serial.begin(115200);
 
@@ -40,6 +43,8 @@ void setup() {
 }
 
 void loop() {
+  ws.printfAll("Server: uptime is %d\n", millis());
+  delay(3000);
 }
 
 bool connectToWifi() {
@@ -74,7 +79,7 @@ bool connectToWifi() {
 }
 
 void startMdns() {
-  char* mdnsHostName = "helloesp32";
+  const char* mdnsHostName = "helloesp32";
   if (MDNS.begin(mdnsHostName)) {
     MDNS.addService("http", "tcp", 80);
     MDNS.addServiceTxt("http", "tcp", "message", "hello world");
@@ -84,8 +89,6 @@ void startMdns() {
     Serial.printf("Failed to start MDNS\n");
   }
 }
-
-AsyncWebServer server(80);
 
 void startWebServer() {
   server.addMiddleware([](AsyncWebServerRequest* request, ArMiddlewareNext next) {
@@ -148,6 +151,22 @@ void startWebServer() {
       request->send(404, "text/plain", "Not found");
     }
   });
+
+  ws.onEvent([](AsyncWebSocket *ws, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    if (type == WS_EVT_CONNECT) {
+      Serial.printf("WebSocket client connected: %u\n", client->id());
+      ws->printf(client->id(), "Welcome client %u!", client->id());
+      ws->printfAll("Server: client %u connected!", client->id());
+    } else if (type == WS_EVT_DISCONNECT) {
+      Serial.printf("WebSocket client disconnected: %u\n", client->id());
+      ws->printfAll("Server: client %u disconnected!", client->id());
+    } else if (type == WS_EVT_DATA) {
+      Serial.printf("WebSocket data received from client %u: %.*s\n", client->id(), len, data);
+      ws->printfAll("Server: client %u says: %.*s", client->id(), len, data);
+    }
+  });
+
+  server.addHandler(&ws);
 
   server.begin();
 }
